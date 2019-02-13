@@ -1,10 +1,28 @@
 package prompt
 
+import (
+	"os"
+)
+
 func dummyExecutor(in string) { return }
 
 // Input get the input data from the user and return it.
 func Input(prefix string, completer Completer, opts ...Option) string {
 	pt := New(dummyExecutor, completer)
+	pt.renderer.prefixTextColor = DefaultColor
+	pt.renderer.prefix = prefix
+
+	for _, opt := range opts {
+		if err := opt(pt); err != nil {
+			panic(err)
+		}
+	}
+	return pt.Input()
+}
+
+// InputFd get the input data from the user and return it.
+func InputFd(tty *os.File, prefix string, completer Completer, opts ...Option) string {
+	pt := New(dummyExecutor, completer, OptionSetFd(tty))
 	pt.renderer.prefixTextColor = DefaultColor
 	pt.renderer.prefix = prefix
 

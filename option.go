@@ -1,8 +1,15 @@
 package prompt
 
+import (
+	"os"
+)
+
 // Option is the type to replace default parameters.
 // prompt.New accepts any number of options (this is functional option pattern).
 type Option func(prompt *Prompt) error
+
+// as a flag
+const inputNotSet = -1
 
 // OptionParser to set a custom ConsoleParser object. An argument should implement ConsoleParser interface.
 func OptionParser(x ConsoleParser) Option {
@@ -234,13 +241,24 @@ func OptionShowCompletionAtStart() Option {
 	}
 }
 
+// OptionSetFd sets the file to read/write to (instead of stdin/stdout)
+func OptionSetFd(f *os.File) Option {
+	return func(p *Prompt) error {
+		defaultWriter := NewStdoutWriter(f)
+		registerConsoleWriter(defaultWriter)
+		p.renderer.out = defaultWriter
+		p.in = NewStandardInputParser(f)
+		return nil
+	}
+}
+
 // New returns a Prompt with powerful auto-completion.
 func New(executor Executor, completer Completer, opts ...Option) *Prompt {
-	defaultWriter := NewStdoutWriter()
+	defaultWriter := NewStdoutWriter(nil)
 	registerConsoleWriter(defaultWriter)
 
 	pt := &Prompt{
-		in: NewStandardInputParser(),
+		in: nil,
 		renderer: &Render{
 			prefix:                       "> ",
 			out:                          defaultWriter,
@@ -274,5 +292,11 @@ func New(executor Executor, completer Completer, opts ...Option) *Prompt {
 			panic(err)
 		}
 	}
+
+	// if it hasn't been set via OptionSetFd, set it to Stdin
+	if pt.in == nil {
+		pt.in = NewStandardInputParser(nil)
+	}
+
 	return pt
 }

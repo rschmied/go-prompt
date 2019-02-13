@@ -3,10 +3,11 @@
 package prompt
 
 import (
+	"os"
 	"syscall"
 	"unsafe"
 
-	"github.com/c-bata/go-prompt/internal/term"
+	"github.com/rschmied/go-prompt/internal/term"
 )
 
 const maxReadBytes = 1024
@@ -78,13 +79,21 @@ func (t *PosixParser) GetWinSize() *WinSize {
 
 var _ ConsoleParser = &PosixParser{}
 
-// NewStandardInputParser returns ConsoleParser object to read from stdin.
-func NewStandardInputParser() *PosixParser {
-	in, err := syscall.Open("/dev/tty", syscall.O_RDONLY, 0)
-	if err != nil {
-		panic(err)
+// NewStandardInputParser returns ConsoleParser object to read from stdin
+// or from the provided file (-descriptor).
+func NewStandardInputParser(f *os.File) *PosixParser {
+	var (
+		in  int
+		err error
+	)
+	if f == nil {
+		in, err = syscall.Open("/dev/tty", syscall.O_RDONLY, 0)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		in = int(f.Fd())
 	}
-
 	return &PosixParser{
 		fd: in,
 	}

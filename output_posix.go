@@ -3,6 +3,7 @@
 package prompt
 
 import (
+	"os"
 	"syscall"
 )
 
@@ -51,17 +52,29 @@ var (
 // NewStdoutWriter returns ConsoleWriter object to write to stdout.
 // This generates VT100 escape sequences because almost terminal emulators
 // in POSIX OS built on top of a VT100 specification.
-func NewStdoutWriter() ConsoleWriter {
+func NewStdoutWriter(f *os.File) ConsoleWriter {
+	var fd int
+	if f == nil {
+		fd = syscall.Stdout
+	} else {
+		fd = int(f.Fd())
+	}
 	return &PosixWriter{
-		fd: syscall.Stdout,
+		fd: fd,
 	}
 }
 
 // NewStderrWriter returns ConsoleWriter object to write to stderr.
 // This generates VT100 escape sequences because almost terminal emulators
 // in POSIX OS built on top of a VT100 specification.
-func NewStderrWriter() ConsoleWriter {
+func NewStderrWriter(f *os.File) ConsoleWriter {
+	var fd int
+	if f == nil {
+		fd = syscall.Stderr
+	} else {
+		fd = int(f.Fd())
+	}
 	return &PosixWriter{
-		fd: syscall.Stderr,
+		fd: fd,
 	}
 }
